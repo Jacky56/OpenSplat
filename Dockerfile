@@ -40,6 +40,22 @@ RUN apt-get update && \
     libopencv-dev \
     unzip \
     wget \
+    libboost-program-options-dev \
+    libboost-filesystem-dev \
+    libboost-graph-dev \
+    libboost-system-dev \
+    libeigen3-dev \
+    libflann-dev \
+    libfreeimage-dev \
+    libmetis-dev \
+    libgoogle-glog-dev \
+    libgtest-dev \
+    libsqlite3-dev \
+    libglew-dev \
+    qtbase5-dev \
+    libqt5opengl5-dev \
+    libcgal-dev \
+    libceres-dev \
     sudo && \
     apt-get autoremove -y --purge && \
     apt-get clean && \
@@ -56,7 +72,7 @@ RUN wget --no-check-certificate -nv https://download.pytorch.org/libtorch/cu"${C
 
 # Configure and build \
 RUN source .github/workflows/cuda/Linux-env.sh cu"${CUDA_VERSION%%.*}"$(echo $CUDA_VERSION | cut -d'.' -f2) && \
-    mkdir build && \
+    mkdir -p build && \
     cd build && \
     cmake .. \
     -GNinja \
@@ -65,4 +81,21 @@ RUN source .github/workflows/cuda/Linux-env.sh cu"${CUDA_VERSION%%.*}"$(echo $CU
     -DCMAKE_INSTALL_PREFIX=/code/install \
     -DCMAKE_CUDA_ARCHITECTURES="${CMAKE_CUDA_ARCHITECTURES}" \
     -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_HOME} && \
-    ninja
+    ninja && ninja install 
+
+RUN source .github/workflows/cuda/Linux-env.sh cu"${CUDA_VERSION%%.*}"$(echo $CUDA_VERSION | cut -d'.' -f2) && \
+    git clone https://github.com/colmap/colmap.git && \
+    cd colmap && \
+    git checkout 3.9.1 && \
+    mkdir build && \
+    cd build && \
+    cmake .. \
+    -GNinja \
+    -DCMAKE_CUDA_ARCHITECTURES="${CMAKE_CUDA_ARCHITECTURES}" \
+    -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_HOME} \
+    -DCUDA_ENABLED=ON && \
+    ninja && ninja install
+
+ENV PATH=/code/build:$PATH
+ENV OPENSPLAT_VERSION=1.1.3
+# docker run --gpus all -v /home/jacky/source/op_compiled/data:/data  c /code/build/opensplat /data/input/toy -n 2000 -o /data/output/toy.ply
